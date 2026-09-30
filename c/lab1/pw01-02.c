@@ -8,7 +8,7 @@ int main(void){
 
     printf("%*s\n", 19, "А.А."); // UTF-8 
 
-    printf("].А.А вокичбулоГ[\n");
+    printf("]А.А. Голубчиков[\n");
 
     return 0;
 }
