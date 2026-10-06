@@ -12,7 +12,7 @@ run
 ```
 for compile c code
 
-after run oyutput file
+after run output file
 
 Example
 ```bash
