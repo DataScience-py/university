@@ -21,3 +21,9 @@ cd c/lab2
 ```bash
 cd c/lab3
 ```
+
+## lab 4
+
+```bash
+cd c/lab4
+```
