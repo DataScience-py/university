@@ -12,7 +12,8 @@ int main(void){
 };
 
 
-const double coef = 3.785;
+
 double l_to_gal(double l){
+  const double coef = 3.785;
   return l / coef;  
 };
