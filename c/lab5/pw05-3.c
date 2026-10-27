@@ -1,7 +1,5 @@
 #include <stdio.h>
 
-#define COEF 1000;
-
 int main(void){
     int n;
     double s;
