@@ -28,8 +28,10 @@
 далее числа записываются в memory[1], memory[2], ... Выполнение
 начинается с адреса START_PC.
 
-Обработка ошибок: код ошибки кладётся в cpu_state[5], процессор
-останавливается, а сообщение выводит main() через print_error().
+Обработка ошибок: код ошибки кладётся в cpu_state[5]. Для ошибок
+выполнения (коды 1-4) подробное сообщение печатает run_cpu в момент
+обнаружения, а итоговую строку - main. Для ошибок загрузки (коды 5-9)
+всё печатает print_error из main.
 */
 
 
@@ -125,13 +127,18 @@ int main(void) {
     if (cpu_state[CPU_ERR] == ERR_NONE) {
         init_cpu(cpu_state, memory);
     }
-    
+
     if (cpu_state[CPU_ERR] == ERR_NONE) {
         run_cpu(cpu_state, memory);
     }
 
     if (cpu_state[CPU_ERR] != ERR_NONE) {
-        print_error(cpu_state, memory);
+        if (cpu_state[CPU_ERR] >= ERR_INPUT_EMPTY) {
+            print_error(cpu_state, memory);
+        } else {
+            printf("Программа завершена с ошибкой. Код ошибки: %d\n",
+                   cpu_state[CPU_ERR]);
+        }
         return 1;
     }
 
@@ -193,7 +200,7 @@ void init_cpu(int cpu_state[], int memory[]) {
     cpu_state[CPU_STOP] = 0;
     cpu_state[CPU_ERR] = ERR_NONE;
 
-    /* память под расширения состаяний процессора */
+    /* память под расширения состояний процессора */
     cpu_state[6] = 0;
     cpu_state[7] = 0;
 }
@@ -253,7 +260,7 @@ int check_operand(int cpu_state[], int memory[]) {
 /* ---------------------Исполнение команд------------------------ */
 
 
-/* Загрузка данных (комманда 1) */
+/* Загрузка данных (команда 1) */
 void cmd_load(int cpu_state[], int operand, int addr){
     cpu_state[CPU_ACC] = operand;
 
@@ -263,7 +270,7 @@ void cmd_load(int cpu_state[], int operand, int addr){
     cpu_state[CPU_PC] += 2;
 }
 
-/* Умножение (комманда 2) */
+/* Умножение (команда 2) */
 void cmd_mul(int cpu_state[], int operand, int addr){
     cpu_state[CPU_ACC] = cpu_state[CPU_ACC] * operand;
 
@@ -273,7 +280,7 @@ void cmd_mul(int cpu_state[], int operand, int addr){
     cpu_state[CPU_PC] += 2;
 }
 
-/* деление (комманда 3) */
+/* деление (команда 3) */
 void cmd_div(int cpu_state[], int operand, int addr){
     cpu_state[CPU_ACC] = cpu_state[CPU_ACC] / operand;
 
@@ -283,7 +290,7 @@ void cmd_div(int cpu_state[], int operand, int addr){
     cpu_state[CPU_PC] += 2;
 }
 
-/* безусловный переход (комманда 4) */
+/* безусловный переход (команда 4) */
 void cmd_jump(int cpu_state[], int addr){
     printf("pc=%d: команда 4 (JUMP), адрес=%d, acc=%d\n",
            cpu_state[CPU_PC], addr, cpu_state[CPU_ACC]);
@@ -291,7 +298,7 @@ void cmd_jump(int cpu_state[], int addr){
     cpu_state[CPU_PC] = addr;
 }
 
-/* условный переход при acc = 0 (комманда 5) */
+/* условный переход при acc = 0 (команда 5) */
 void cmd_jz(int cpu_state[], int addr){
     if (cpu_state[CPU_ACC] == 0) {
         printf("pc=%d: команда 5 (JZ), адрес=%d, переход выполнен, acc=%d\n",
@@ -304,9 +311,9 @@ void cmd_jz(int cpu_state[], int addr){
     }
 }
 
-/* выборщик комманды */
+/* выборщик команды */
 void execute_command(int cpu_state[], int memory[]){
-    int opperand, addr;
+    int operand, addr;
 
     if(cpu_state[CPU_IR] == 0) {
         printf("pc=%d: команда 0 (STOP), acc=%d\n", cpu_state[CPU_PC],
@@ -316,17 +323,17 @@ void execute_command(int cpu_state[], int memory[]){
     }
 
     addr = memory[cpu_state[CPU_PC] + 1];
-    opperand = memory[addr];
+    operand = memory[addr];
 
     switch (cpu_state[CPU_IR]) {
-        case 1: cmd_load(cpu_state, opperand, addr); break;
-        case 2: cmd_mul (cpu_state, opperand, addr); break;
-        case 3: cmd_div (cpu_state, opperand, addr); break;
+        case 1: cmd_load(cpu_state, operand, addr); break;
+        case 2: cmd_mul (cpu_state, operand, addr); break;
+        case 3: cmd_div (cpu_state, operand, addr); break;
         case 4: cmd_jump(cpu_state, addr); break;
         case 5: cmd_jz  (cpu_state, addr); break;
-        default: 
+        default:
+            cpu_state[CPU_ERR] = ERR_OPCODE;
             cpu_state[CPU_STOP] = 1;
-            print_error(cpu_state, memory);
             break;
     }
 }
@@ -341,6 +348,9 @@ void execute_command(int cpu_state[], int memory[]){
 
 
 void run_cpu(int cpu_state[], int memory[]) {
+    int interrupted = 0;
+    int saved_error = ERR_NONE;
+
     while (cpu_state[CPU_STOP] == 0) {
         cpu_state[CPU_ERR] = fetch_command(cpu_state, memory);
         if (cpu_state[CPU_ERR] == ERR_NONE) {
@@ -348,12 +358,32 @@ void run_cpu(int cpu_state[], int memory[]) {
         }
 
         if (cpu_state[CPU_ERR] != ERR_NONE) {
-            cpu_state[CPU_STOP] = 1;
-            return;
-        }
+            saved_error = cpu_state[CPU_ERR];
 
-        execute_command(cpu_state, memory);
+            /* подробности печатаем здесь, пока PC ещё на ошибочной команде */
+            switch (saved_error) {
+                case ERR_MEMORY:     err_memory(cpu_state, memory);   break;
+                case ERR_OPCODE:     err_opcode(cpu_state);           break;
+                case ERR_DIV_ZERO:   err_div_zero(cpu_state, memory); break;
+                case ERR_NO_OPERAND: err_no_operand(cpu_state);       break;
+            }
+
+            if (interrupted == 0) {
+                printf("    прерывание (код %d): переход на адрес %d\n",
+                       saved_error, cpu_state[CPU_VEC]);
+                cpu_state[CPU_PC] = cpu_state[CPU_VEC];
+                interrupted = 1;
+            } else {
+                printf("    повторное прерывание (код %d): останов\n",
+                       saved_error);
+                cpu_state[CPU_STOP] = 1;
+            }
+        } else {
+            execute_command(cpu_state, memory);
+        }
     }
+
+    cpu_state[CPU_ERR] = saved_error;
 }
 
 
