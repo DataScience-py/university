@@ -1,8 +1,9 @@
+#include <stddef.h>
 #include <stdio.h>
 #include <limits.h>
 
 /*Вывод массива на экран через указатели*/
-void printArr(int first[], int n){
+void printArr(int first[], size_t n){
     int *last = first + n; 
     printf("Arr: ");
     for (int *i = first; i < last; i++){
@@ -13,18 +14,29 @@ void printArr(int first[], int n){
 
 
 /*Заполнение масисвы числом*/
-void fillArrValue(int first[], int n, int value){
+void fillArrValue(int first[], size_t n, int value){
     int *last = first + n;
     for (int *i = first; i < last; i++){
         *i = value;
     };
 };
 
-/*Вывод размера массива*/
-void size(int first[], int n){
-    // можно и просто выводить n
-    int *last = first + n;
-    printf("%ld\n", last - first);
+/*Получение размера массива*/
+size_t set_size(){
+    int c, n;
+    while (1){
+        printf("Write a size of array: ");
+        c = scanf("%d", &n);
+        if (c == 1 && n > 0){
+            return n;
+        } else if (c == -1){
+            return -1;
+        } else{
+            printf("Try again.\n");
+            break;
+        }
+    }
+    return -1;
 };
 
 
@@ -35,7 +47,7 @@ void clear(void){
 };
 
 /*Заполнение массива данными*/
-int fill(int first[], int n){
+int fill(int first[], size_t n){
     int *last = first + n;
     printf("Filling the array. Only the first 9 digits are saved.\n");
     int *i = first;
@@ -63,7 +75,7 @@ int fill(int first[], int n){
 
 
 /* 2 вариант поиск максимального с k по m индексы*/
-void maxArr(int first[], int n, int k, int m){
+void maxArr(int first[], size_t n, int k, int m){
     int *last = first + n;
     int *i = first + k;
     int *j = first + m + 1;
@@ -90,7 +102,7 @@ void maxArr(int first[], int n, int k, int m){
 
 
 /* 11 вариант среднее с k по m в массиве*/
-void avgArr(int first[], int n, int k, int m){
+void avgArr(int first[], size_t n, int k, int m){
     int *last = first + n;
     int *i = first + k;
     int *j = first + m + 1;
@@ -115,7 +127,7 @@ void avgArr(int first[], int n, int k, int m){
 
 
 /* 20 Количество превосходящих k в массиве*/
-void countBiggestArr(int first[], int n, int k){
+void countBiggestArr(int first[], size_t n, int k){
     unsigned int count = 0;
     int * last = first + n;
     for (int *i = first;i < last; i++){

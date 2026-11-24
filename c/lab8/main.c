@@ -1,30 +1,20 @@
 #include <stdio.h>
 #include "myarrfunc.h"
 
-int main(void) {
-    int n, c;
-    while (1) {
-        printf("Input a size of array: ");
-        c = scanf("%d", &n);
-        clear();
-        if (c == 1 && n > 0) {
-            break;
-        } else if (c == EOF) {
-            return -1;
-        } else {
-            printf("Try again. Size must be > 0.\n");
-        }
-    }
+#define SIZE 1000
 
-    int arr[n];
-    fillArrValue(arr, n, 0);
+int main(void) {
+    int c;
+    size_t n = 0, temp = 0;
 
     char command;
     int k, m;
+    int arr[SIZE];
+    fillArrValue(arr, SIZE, 0);
 
     while (1) {
         while (1) {
-            printf("\na - size of array\n"
+            printf("\na - set size of array\n"
                    "b - show array\n"
                    "c - fill array\n"
                    "d - max value from k to m index\n"
@@ -49,15 +39,35 @@ int main(void) {
 
         switch (command) {
             case 'a':
-                size(arr, n);
+                temp = set_size();
+                if (temp == -1){
+                    return -1;
+                }
+                if (temp > SIZE){
+                    printf("n больше чем %d, сохранено прошлое значение %zu", SIZE, n);
+                    break;
+                }
+                n = temp;
                 break;
             case 'b':
+                if (n == 0){
+                    printf("Укажите сначала размер");
+                    break;
+                }
                 printArr(arr, n);
                 break;
             case 'c':
+                if (n == 0){
+                    printf("Укажите сначала размер");
+                    break;
+                }
                 fill(arr, n);
                 break;
             case 'd':
+                if (n == 0){
+                    printf("Укажите сначала размер");
+                    break;
+                }
                 while (1) {
                     printf("Input k and m indexes: ");
                     c = scanf("%d %d", &k, &m);
@@ -73,8 +83,12 @@ int main(void) {
                 maxArr(arr, n, k, m);
                 break;
             case 'e':
+                if (n == 0){
+                    printf("Укажите сначала размер");
+                    break;
+                }
                 while (1) {
-                    printf("Input k and m indexes: ");
+                   printf("Input k and m indexes: ");
                     c = scanf("%d %d", &k, &m);
                     clear();
                     if (c == 2) {
@@ -88,6 +102,10 @@ int main(void) {
                 avgArr(arr, n, k, m);
                 break;
             case 'f':
+                if (n == 0){
+                    printf("Укажите сначала размер");
+                    break;
+                } 
                 while (1) {
                     printf("Input k value: ");
                     c = scanf("%d", &k);
